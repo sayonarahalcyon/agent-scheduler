@@ -30,9 +30,12 @@ html_code = f"""
     .schedule-grid {{ display: grid; grid-template-columns: 100px repeat(7, 1fr); gap: 4px; background-color: #ddd; padding: 4px; border-radius: 4px; }}
     .header-cell {{ background-color: #333; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 14px; }}
     .time-cell {{ background-color: #eee; padding: 10px; font-weight: bold; font-size: 12px; text-align: right; border-right: 2px solid #ccc; }}
-    .drop-zone {{ background-color: white; min-height: 45px; padding: 4px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; }}
+    
+    /* Flex direction column and gap allows multiple agent blocks to stack neatly vertically */
+    .drop-zone {{ background-color: white; min-height: 50px; padding: 6px; border: 1px dashed #ccc; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: flex-start; }}
     .drop-zone.drag-over {{ background-color: #e0f7fa; border-color: #00acc1; }}
-    .agent-block {{ background-color: #fff3e0; border: 2px solid #ffb74d; color: #e65100; padding: 6px 12px; border-radius: 4px; cursor: move; font-weight: bold; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; width: 80%; }}
+    
+    .agent-block {{ background-color: #fff3e0; border: 2px solid #ffb74d; color: #e65100; padding: 6px 12px; border-radius: 4px; cursor: move; font-weight: bold; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; width: 90%; box-sizing: border-box; }}
     .agent-block:active {{ opacity: 0.5; }}
 </style>
 </head>
@@ -57,11 +60,17 @@ html_code = f"""
             }});
         }});
 
-        // Populate Blocks
+        # Populate Blocks (Supports multiple items per slot)
         initialShifts.forEach(shift => {{
             const cell = document.querySelector(`[data-day="${{shift.day}}"][data-time="${{shift.time}}"]`);
             if(cell) {{
-                cell.innerHTML = `<div class="agent-block" draggable="true" id="${{shift.id}}" ondragstart="drag(event)">${{shift.name}}</div>`;
+                const block = document.createElement('div');
+                block.className = 'agent-block';
+                block.draggable = true;
+                block.id = shift.id;
+                block.innerText = shift.name;
+                block.setAttribute('ondragstart', 'drag(event)');
+                cell.appendChild(block);
             }}
         }});
 
@@ -87,13 +96,18 @@ html_code = f"""
             const blockId = ev.dataTransfer.getData("text/plain");
             const draggedElement = document.getElementById(blockId);
             
-            // Only drop if target is an empty grid zone
-            if (ev.currentTarget.classList.contains('drop-zone') && ev.currentTarget.children.length === 0) {{
-                ev.currentTarget.appendChild(draggedElement);
+            // Redirect target cell to parent if dropped directly on top of another agent block
+            let targetCell = ev.target;
+            if (targetCell.classList.contains('agent-block')) {{
+                targetCell = targetCell.parentElement;
+            }}
+            
+            if (targetCell && targetCell.classList.contains('drop-zone')) {{
+                targetCell.appendChild(draggedElement);
                 
                 // Collect and send data back to Streamlit
-                const targetDay = ev.currentTarget.getAttribute('data-day');
-                const targetTime = ev.currentTarget.getAttribute('data-time');
+                const targetDay = targetCell.getAttribute('data-day');
+                const targetTime = targetCell.getAttribute('data-time');
                 
                 const updatedShift = {{ id: blockId, day: targetDay, time: targetTime }};
                 window.parent.postMessage({{type: 'streamlit:setComponentValue', value: updatedShift}}, '*');
@@ -107,7 +121,7 @@ html_code = f"""
 """
 
 # 4. Render Grid & Capture Drag Events
-component_value = components.html(html_code, height=1300, scrolling=True)
+component_value = components.html(html_code, height=1400, scrolling=True)
 
 # 5. Process Changes Real-Time in Streamlit Backend
 if component_value and isinstance(component_value, dict) and 'id' in component_value:
