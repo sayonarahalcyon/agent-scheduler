@@ -5,8 +5,7 @@ import json
 st.set_page_config(layout="wide")
 st.title("🕵️‍♂️ Agent Shift Scheduler")
 
-# --- EMBEDDED SHEET DATA ---
-# This holds your exact schedule directly in code so no file upload is needed!
+# --- EMBEDDED COMPLETE 24/7 ROSTER ---
 if 'shifts' not in st.session_state:
     st.session_state.shifts = [
         # 12:00 AM
@@ -117,7 +116,7 @@ if 'shifts' not in st.session_state:
         {"id": "e97", "name": "ELIZABETH", "day": "Saturday", "time": "4:00 AM"},
         {"id": "e98", "name": "MARK", "day": "Sunday", "time": "4:00 AM"},
 
-        # 6:00 PM (18:00:00)
+        # 6:00 PM
         {"id": "e99", "name": "JOJO", "day": "Monday", "time": "6:00 PM"},
         {"id": "e100", "name": "RENCE", "day": "Monday", "time": "6:00 PM"},
         {"id": "e101", "name": "JOHN", "day": "Monday", "time": "6:00 PM"},
@@ -166,7 +165,7 @@ if 'shifts' not in st.session_state:
         {"id": "e144", "name": "YARI", "day": "Sunday", "time": "6:00 PM"},
         {"id": "e145", "name": "HENNA", "day": "Sunday", "time": "6:00 PM"},
 
-        # 7:00 PM (19:00:00)
+        # 7:00 PM
         {"id": "e146", "name": "JOJO", "day": "Monday", "time": "7:00 PM"},
         {"id": "e147", "name": "RENCE", "day": "Monday", "time": "7:00 PM"},
         {"id": "e148", "name": "JOHN", "day": "Monday", "time": "7:00 PM"},
@@ -203,7 +202,7 @@ if 'shifts' not in st.session_state:
         {"id": "e179", "name": "YARI", "day": "Sunday", "time": "7:00 PM"},
         {"id": "e180", "name": "HENNA", "day": "Sunday", "time": "7:00 PM"},
 
-        # 8:00 PM (20:00:00)
+        # 8:00 PM
         {"id": "e181", "name": "JOJO", "day": "Monday", "time": "8:00 PM"},
         {"id": "e182", "name": "RENCE", "day": "Monday", "time": "8:00 PM"},
         {"id": "e183", "name": "JOHN", "day": "Monday", "time": "8:00 PM"},
@@ -235,7 +234,12 @@ if 'shifts' not in st.session_state:
     ]
 
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-hours = ["12:00 AM"] + [f"{i}:00 AM" for i in range(1, 12)] + ["12:00 PM"] + [f"{i}:00 PM" for i in range(1, 12)]
+
+# All 24 standard calendar hours listed sequentially
+hours = [
+    "12:00 AM", "1:00 AM", "2:00 AM", "3:00 AM", "4:00 AM", "5:00 AM", "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
+    "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM", "9:00 PM", "10:00 PM", "11:00 PM"
+]
 
 # Panel to add names manually if needed
 st.markdown("### ➕ Schedule a New Shift")
@@ -357,7 +361,7 @@ html_code = f"""
 """
 
 # 4. Render Grid & Capture Drag Events
-component_value = components.html(html_code, height=2500, scrolling=True)
+component_value = components.html(html_code, height=3100, scrolling=True)
 
 # 5. Process Changes Real-Time in Streamlit Backend
 if component_value and isinstance(component_value, dict) and 'id' in component_value:
