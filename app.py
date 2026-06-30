@@ -31,7 +31,7 @@ html_code = f"""
     .header-cell {{ background-color: #333; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 14px; }}
     .time-cell {{ background-color: #eee; padding: 10px; font-weight: bold; font-size: 12px; text-align: right; border-right: 2px solid #ccc; }}
     
-    /* Flex direction column and gap allows multiple agent blocks to stack neatly vertically */
+    /* Column flex direction lets up to 5+ blocks stack neatly in a single cell */
     .drop-zone {{ background-color: white; min-height: 50px; padding: 6px; border: 1px dashed #ccc; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: flex-start; }}
     .drop-zone.drag-over {{ background-color: #e0f7fa; border-color: #00acc1; }}
     
@@ -60,7 +60,7 @@ html_code = f"""
             }});
         }});
 
-        # Populate Blocks (Supports multiple items per slot)
+        // Populate Blocks (Supports multiple items per slot)
         initialShifts.forEach(shift => {{
             const cell = document.querySelector(`[data-day="${{shift.day}}"][data-time="${{shift.time}}"]`);
             if(cell) {{
@@ -127,14 +127,4 @@ component_value = components.html(html_code, height=1400, scrolling=True)
 if component_value and isinstance(component_value, dict) and 'id' in component_value:
     for shift in st.session_state.shifts:
         if shift['id'] == component_value['id']:
-            if shift['day'] != component_value['day'] or shift['time'] != component_value['time']:
-                shift['day'] = component_value['day']
-                shift['time'] = component_value['time']
-                st.toast(f"Moved {shift['name']} to {component_value['day']} at {component_value['time']}!", icon="✅")
-                st.rerun()
-
-# 6. Sidebar Debugger to verify state shifts
-with st.sidebar:
-    st.header("Database View")
-    st.write("This mirrors your cloud database changes:")
-    st.json(st.session_state.shifts)
+            if shift
