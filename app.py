@@ -110,7 +110,7 @@ html_code = f"""
 component_value = components.html(html_code, height=1300, scrolling=True)
 
 # 5. Process Changes Real-Time in Streamlit Backend
-if component_value:
+if component_value and isinstance(component_value, dict) and 'id' in component_value:
     for shift in st.session_state.shifts:
         if shift['id'] == component_value['id']:
             if shift['day'] != component_value['day'] or shift['time'] != component_value['time']:
