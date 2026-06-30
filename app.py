@@ -127,4 +127,14 @@ component_value = components.html(html_code, height=1400, scrolling=True)
 if component_value and isinstance(component_value, dict) and 'id' in component_value:
     for shift in st.session_state.shifts:
         if shift['id'] == component_value['id']:
-            if shift
+            if shift['day'] != component_value['day'] or shift['time'] != component_value['time']:
+                shift['day'] = component_value['day']
+                shift['time'] = component_value['time']
+                st.toast(f"Moved {shift['name']} to {component_value['day']} at {component_value['time']}!", icon="✅")
+                st.rerun()
+
+# 6. Sidebar Debugger to verify state shifts
+with st.sidebar:
+    st.header("Database View")
+    st.write("This mirrors your cloud database changes:")
+    st.json(st.session_state.shifts)
