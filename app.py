@@ -4,9 +4,8 @@ import json
 
 st.set_page_config(layout="wide")
 st.title("🕵️‍♂️ Agent Shift Scheduler")
-st.subheader("Drag and drop agent blocks to adjust their shifts")
 
-# 1. Initialize Sample Shift Data in temporary memory
+# 1. Initialize Shift Data
 if 'shifts' not in st.session_state:
     st.session_state.shifts = [
         {"id": "s1", "name": "ALEX", "day": "Monday", "time": "2:00 AM"},
@@ -16,9 +15,38 @@ if 'shifts' not in st.session_state:
         {"id": "s5", "name": "BEN", "day": "Saturday", "time": "11:00 PM"}
     ]
 
-# 2. Define Time Slots and Days for our grid
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 hours = ["12:00 AM"] + [f"{i}:00 AM" for i in range(1, 12)] + ["12:00 PM"] + [f"{i}:00 PM" for i in range(1, 12)]
+
+# 2. Add New Agent Interface Panel
+st.markdown("### ➕ Schedule a New Shift")
+col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+
+with col1:
+    new_name = st.text_input("Agent Name", placeholder="e.g. DAVID").upper()
+with col2:
+    new_day = st.selectbox("Day", days)
+with col3:
+    new_time = st.selectbox("Start Time", hours)
+with col4:
+    st.write("") # Spacer
+    st.write("") 
+    if st.button("Add Agent Block", use_container_width=True):
+        if new_name.strip():
+            # Create a unique ID using the current length
+            new_id = f"s{len(st.session_state.shifts) + 1}"
+            st.session_state.shifts.append({
+                "id": new_id,
+                "name": new_name,
+                "day": new_day,
+                "time": new_time
+            })
+            st.toast(f"Added {new_name} to the schedule!", icon="➕")
+            st.rerun()
+        else:
+            st.warning("Please enter a valid name.")
+
+st.markdown("---")
 
 # 3. Create the Custom Drag-and-Drop Grid Component (HTML/JS)
 html_code = f"""
@@ -27,15 +55,15 @@ html_code = f"""
 <head>
 <style>
     body {{ font-family: sans-serif; background-color: #f9f9f9; margin: 0; padding: 10px; }}
-    .schedule-grid {{ display: grid; grid-template-columns: 100px repeat(7, 1fr); gap: 4px; background-color: #ddd; padding: 4px; border-radius: 4px; }}
-    .header-cell {{ background-color: #333; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 14px; }}
-    .time-cell {{ background-color: #eee; padding: 10px; font-weight: bold; font-size: 12px; text-align: right; border-right: 2px solid #ccc; }}
+    .schedule-grid {{ display: grid; grid-template-columns: 120px repeat(7, 1fr); gap: 6px; background-color: #ddd; padding: 6px; border-radius: 4px; }}
+    .header-cell {{ background-color: #333; color: white; text-align: center; padding: 12px; font-weight: bold; font-size: 14px; }}
+    .time-cell {{ background-color: #eee; padding: 12px 6px; font-weight: bold; font-size: 12px; text-align: right; border-right: 2px solid #ccc; display: flex; align-items: center; justify-content: flex-end; }}
     
-    /* Column flex direction lets up to 5+ blocks stack neatly in a single cell */
-    .drop-zone {{ background-color: white; min-height: 50px; padding: 6px; border: 1px dashed #ccc; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: flex-start; }}
+    /* Expanded heights and auto-expansion to hold 5+ agents neatly */
+    .drop-zone {{ background-color: white; min-height: 80px; height: auto; padding: 6px; border: 1px dashed #ccc; display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: flex-start; box-sizing: border-box; }}
     .drop-zone.drag-over {{ background-color: #e0f7fa; border-color: #00acc1; }}
     
-    .agent-block {{ background-color: #fff3e0; border: 2px solid #ffb74d; color: #e65100; padding: 6px 12px; border-radius: 4px; cursor: move; font-weight: bold; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; width: 90%; box-sizing: border-box; }}
+    .agent-block {{ background-color: #fff3e0; border: 2px solid #ffb74d; color: #e65100; padding: 6px 4px; border-radius: 4px; cursor: move; font-weight: bold; font-size: 11px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; width: 95%; box-sizing: border-box; word-break: break-all; }}
     .agent-block:active {{ opacity: 0.5; }}
 </style>
 </head>
@@ -51,16 +79,12 @@ html_code = f"""
         const initialShifts = {json.dumps(st.session_state.shifts)};
         
         hours.forEach(hour => {{
-            // Time Label Column
             document.write(`<div class="time-cell">${{hour}}</div>`);
-            
-            // Day Columns for this Hour row
             days.forEach(day => {{
                 document.write(`<div class="drop-zone" data-day="${{day}}" data-time="${{hour}}" ondragover="allowDrop(event)" ondragleave="clearDropStyle(event)" ondrop="drop(event)"></div>`);
             }});
         }});
 
-        // Populate Blocks (Supports multiple items per slot)
         initialShifts.forEach(shift => {{
             const cell = document.querySelector(`[data-day="${{shift.day}}"][data-time="${{shift.time}}"]`);
             if(cell) {{
@@ -74,7 +98,6 @@ html_code = f"""
             }}
         }});
 
-        // Drag & Drop Handlers
         function drag(ev) {{
             ev.dataTransfer.setData("text/plain", ev.target.id);
         }}
@@ -96,7 +119,6 @@ html_code = f"""
             const blockId = ev.dataTransfer.getData("text/plain");
             const draggedElement = document.getElementById(blockId);
             
-            // Redirect target cell to parent if dropped directly on top of another agent block
             let targetCell = ev.target;
             if (targetCell.classList.contains('agent-block')) {{
                 targetCell = targetCell.parentElement;
@@ -105,7 +127,6 @@ html_code = f"""
             if (targetCell && targetCell.classList.contains('drop-zone')) {{
                 targetCell.appendChild(draggedElement);
                 
-                // Collect and send data back to Streamlit
                 const targetDay = targetCell.getAttribute('data-day');
                 const targetTime = targetCell.getAttribute('data-time');
                 
@@ -121,7 +142,7 @@ html_code = f"""
 """
 
 # 4. Render Grid & Capture Drag Events
-component_value = components.html(html_code, height=1400, scrolling=True)
+component_value = components.html(html_code, height=2200, scrolling=True)
 
 # 5. Process Changes Real-Time in Streamlit Backend
 if component_value and isinstance(component_value, dict) and 'id' in component_value:
@@ -132,9 +153,3 @@ if component_value and isinstance(component_value, dict) and 'id' in component_v
                 shift['time'] = component_value['time']
                 st.toast(f"Moved {shift['name']} to {component_value['day']} at {component_value['time']}!", icon="✅")
                 st.rerun()
-
-# 6. Sidebar Debugger to verify state shifts
-with st.sidebar:
-    st.header("Database View")
-    st.write("This mirrors your cloud database changes:")
-    st.json(st.session_state.shifts)
