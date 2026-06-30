@@ -1,76 +1,238 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import pandas as pd
 import json
 
 st.set_page_config(layout="wide")
 st.title("🕵️‍♂️ Agent Shift Scheduler")
 
-# --- DATA AUTOMATION FROM SHEET ---
-@st.cache_data
-def load_initial_shifts_from_sheet():
-    try:
-        # Read the uploaded CSV data sheet
-        df = pd.read_csv("Attendance CST.xlsx - CST.csv")
-        
-        # Standardize the column headers to match our grid
-        day_mapping = {
-            'Monday': 'Monday', 'Tuesday': 'Tuesday', 'Wednesday': 'Wednesday',
-            'Thursday': 'Thursday', 'Friday': 'Friday', 'Saturday': 'Saturday', 'Sunday': 'Sunday'
-        }
-        
-        # Find the time column (usually the first column)
-        time_col = df.columns[0]
-        
-        # Forward fill the time values since rows stack underneath the hour label
-        df[time_col] = df[time_col].ffill()
-        
-        parsed_shifts = []
-        id_counter = 1
-        
-        # Map sheet times (e.g. "02:00:00") to our display times (e.g. "2:00 AM")
-        for index, row in df.iterrows():
-            raw_time = str(row[time_col]).strip()
-            if not raw_time or raw_time == "nan":
-                continue
-                
-            # Convert HH:MM:SS to H:MM AM/PM format
-            try:
-                hour_part = int(raw_time.split(":")[0])
-                if hour_part == 0:
-                    grid_time = "12:00 AM"
-                elif hour_part == 12:
-                    grid_time = "12:00 PM"
-                elif hour_part > 12:
-                    grid_time = f"{hour_part - 12}:00 PM"
-                else:
-                    grid_time = f"{hour_part}:00 AM"
-            except:
-                continue # Skip if time parsing fails
-                
-            # Loop through each day column to grab agent names
-            for col in df.columns[1:]:
-                if col in day_mapping:
-                    agent_name = str(row[col]).strip()
-                    # Only add if it's a real name and not empty/placeholder numbers
-                    if agent_name and agent_name != "nan" and not agent_name.replace(".","",1).isdigit():
-                        parsed_shifts.append({
-                            "id": f"s{id_counter}",
-                            "name": agent_name.upper(),
-                            "day": day_mapping[col],
-                            "time": grid_time
-                        })
-                        id_counter += 1
-        return parsed_shifts
-    except Exception as e:
-        # Fallback if file isn't committed to the repo yet
-        return [
-            {"id": "s1", "name": "ALEX", "day": "Monday", "time": "2:00 AM"}
-        ]
-
-# Initialize Shift Data from Sheet
+# --- EMBEDDED SHEET DATA ---
+# This holds your exact schedule directly in code so no file upload is needed!
 if 'shifts' not in st.session_state:
-    st.session_state.shifts = load_initial_shifts_from_sheet()
+    st.session_state.shifts = [
+        # 12:00 AM
+        {"id": "e1", "name": "JOJO", "day": "Monday", "time": "12:00 AM"},
+        {"id": "e2", "name": "NOREEN", "day": "Monday", "time": "12:00 AM"},
+        {"id": "e3", "name": "JULY", "day": "Monday", "time": "12:00 AM"},
+        {"id": "e4", "name": "JOJO", "day": "Tuesday", "time": "12:00 AM"},
+        {"id": "e5", "name": "NOREEN", "day": "Tuesday", "time": "12:00 AM"},
+        {"id": "e6", "name": "JOJO", "day": "Wednesday", "time": "12:00 AM"},
+        {"id": "e7", "name": "NOREEN", "day": "Wednesday", "time": "12:00 AM"},
+        {"id": "e8", "name": "JULY", "day": "Wednesday", "time": "12:00 AM"},
+        {"id": "e9", "name": "JOJO", "day": "Thursday", "time": "12:00 AM"},
+        {"id": "e10", "name": "NOREEN", "day": "Thursday", "time": "12:00 AM"},
+        {"id": "e11", "name": "NOREEN", "day": "Friday", "time": "12:00 AM"},
+        {"id": "e12", "name": "JULY", "day": "Friday", "time": "12:00 AM"},
+        {"id": "e13", "name": "JOJO", "day": "Saturday", "time": "12:00 AM"},
+        {"id": "e14", "name": "NOREEN", "day": "Saturday", "time": "12:00 AM"},
+        {"id": "e15", "name": "ELIZABETH", "day": "Saturday", "time": "12:00 AM"},
+        {"id": "e16", "name": "JULY", "day": "Saturday", "time": "12:00 AM"},
+        {"id": "e17", "name": "JOJO", "day": "Sunday", "time": "12:00 AM"},
+        {"id": "e18", "name": "NOREEN", "day": "Sunday", "time": "12:00 AM"},
+        {"id": "e19", "name": "JULY", "day": "Sunday", "time": "12:00 AM"},
+
+        # 1:00 AM
+        {"id": "e20", "name": "JOJO", "day": "Monday", "time": "1:00 AM"},
+        {"id": "e21", "name": "NOREEN", "day": "Monday", "time": "1:00 AM"},
+        {"id": "e22", "name": "JULY", "day": "Monday", "time": "1:00 AM"},
+        {"id": "e23", "name": "JOJO", "day": "Tuesday", "time": "1:00 AM"},
+        {"id": "e24", "name": "NOREEN", "day": "Tuesday", "time": "1:00 AM"},
+        {"id": "e25", "name": "JOJO", "day": "Wednesday", "time": "1:00 AM"},
+        {"id": "e26", "name": "NOREEN", "day": "Wednesday", "time": "1:00 AM"},
+        {"id": "e27", "name": "JULY", "day": "Wednesday", "time": "1:00 AM"},
+        {"id": "e28", "name": "JOJO", "day": "Thursday", "time": "1:00 AM"},
+        {"id": "e29", "name": "NOREEN", "day": "Thursday", "time": "1:00 AM"},
+        {"id": "e30", "name": "NOREEN", "day": "Friday", "time": "1:00 AM"},
+        {"id": "e31", "name": "JULY", "day": "Friday", "time": "1:00 AM"},
+        {"id": "e32", "name": "JOJO", "day": "Saturday", "time": "1:00 AM"},
+        {"id": "e33", "name": "NOREEN", "day": "Saturday", "time": "1:00 AM"},
+        {"id": "e34", "name": "ELIZABETH", "day": "Saturday", "time": "1:00 AM"},
+        {"id": "e35", "name": "JULY", "day": "Saturday", "time": "1:00 AM"},
+        {"id": "e36", "name": "JOJO", "day": "Sunday", "time": "1:00 AM"},
+        {"id": "e37", "name": "NOREEN", "day": "Sunday", "time": "1:00 AM"},
+        {"id": "e38", "name": "JULY", "day": "Sunday", "time": "1:00 AM"},
+
+        # 2:00 AM
+        {"id": "e39", "name": "STELLA", "day": "Monday", "time": "2:00 AM"},
+        {"id": "e40", "name": "MARK", "day": "Monday", "time": "2:00 AM"},
+        {"id": "e41", "name": "NOREEN", "day": "Monday", "time": "2:00 AM"},
+        {"id": "e42", "name": "JULY", "day": "Monday", "time": "2:00 AM"},
+        {"id": "e43", "name": "STELLA", "day": "Tuesday", "time": "2:00 AM"},
+        {"id": "e44", "name": "MARK", "day": "Tuesday", "time": "2:00 AM"},
+        {"id": "e45", "name": "NOREEN", "day": "Tuesday", "time": "2:00 AM"},
+        {"id": "e46", "name": "STELLA", "day": "Wednesday", "time": "2:00 AM"},
+        {"id": "e47", "name": "JULY", "day": "Wednesday", "time": "2:00 AM"},
+        {"id": "e48", "name": "STELLA", "day": "Thursday", "time": "2:00 AM"},
+        {"id": "e49", "name": "MARK", "day": "Thursday", "time": "2:00 AM"},
+        {"id": "e50", "name": "NOREEN", "day": "Thursday", "time": "2:00 AM"},
+        {"id": "e51", "name": "STELLA", "day": "Friday", "time": "2:00 AM"},
+        {"id": "e52", "name": "MARK", "day": "Friday", "time": "2:00 AM"},
+        {"id": "e53", "name": "NOREEN", "day": "Friday", "time": "2:00 AM"},
+        {"id": "e54", "name": "JULY", "day": "Friday", "time": "2:00 AM"},
+        {"id": "e55", "name": "NOREEN", "day": "Saturday", "time": "2:00 AM"},
+        {"id": "e56", "name": "ELIZABETH", "day": "Saturday", "time": "2:00 AM"},
+        {"id": "e57", "name": "JULY", "day": "Saturday", "time": "2:00 AM"},
+        {"id": "e58", "name": "MARK", "day": "Saturday", "time": "2:00 AM"},
+        {"id": "e59", "name": "MARK", "day": "Sunday", "time": "2:00 AM"},
+        {"id": "e60", "name": "NOREEN", "day": "Sunday", "time": "2:00 AM"},
+        {"id": "e61", "name": "JULY", "day": "Sunday", "time": "2:00 AM"},
+
+        # 3:00 AM
+        {"id": "e62", "name": "STELLA", "day": "Monday", "time": "3:00 AM"},
+        {"id": "e63", "name": "MARK", "day": "Monday", "time": "3:00 AM"},
+        {"id": "e64", "name": "NOREEN", "day": "Monday", "time": "3:00 AM"},
+        {"id": "e65", "name": "MICHELL", "day": "Monday", "time": "3:00 AM"},
+        {"id": "e66", "name": "JULY", "day": "Monday", "time": "3:00 AM"},
+        {"id": "e67", "name": "STELLA", "day": "Tuesday", "time": "3:00 AM"},
+        {"id": "e68", "name": "MARK", "day": "Tuesday", "time": "3:00 AM"},
+        {"id": "e69", "name": "NOREEN", "day": "Tuesday", "time": "3:00 AM"},
+        {"id": "e70", "name": "MICHELL", "day": "Tuesday", "time": "3:00 AM"},
+        {"id": "e71", "name": "STELLA", "day": "Wednesday", "time": "3:00 AM"},
+        {"id": "e72", "name": "MICHELL", "day": "Wednesday", "time": "3:00 AM"},
+        {"id": "e73", "name": "JULY", "day": "Wednesday", "time": "3:00 AM"},
+        {"id": "e74", "name": "STELLA", "day": "Thursday", "time": "3:00 AM"},
+        {"id": "e75", "name": "MARK", "day": "Thursday", "time": "3:00 AM"},
+        {"id": "e76", "name": "NOREEN", "day": "Thursday", "time": "3:00 AM"},
+        {"id": "e77", "name": "JULY", "day": "Thursday", "time": "3:00 AM"},
+        {"id": "e78", "name": "STELLA", "day": "Friday", "time": "3:00 AM"},
+        {"id": "e79", "name": "MARK", "day": "Friday", "time": "3:00 AM"},
+        {"id": "e80", "name": "NOREEN", "day": "Friday", "time": "3:00 AM"},
+        {"id": "e81", "name": "MICHELL", "day": "Friday", "time": "3:00 AM"},
+        {"id": "e82", "name": "JULY", "day": "Friday", "time": "3:00 AM"},
+        {"id": "e83", "name": "NOREEN", "day": "Saturday", "time": "3:00 AM"},
+        {"id": "e84", "name": "ELIZABETH", "day": "Saturday", "time": "3:00 AM"},
+        {"id": "e85", "name": "MICHELL", "day": "Saturday", "time": "3:00 AM"},
+        {"id": "e86", "name": "JULY", "day": "Saturday", "time": "3:00 AM"},
+        {"id": "e87", "name": "MARK", "day": "Saturday", "time": "3:00 AM"},
+        {"id": "e88", "name": "MARK", "day": "Sunday", "time": "3:00 AM"},
+        {"id": "e89", "name": "NOREEN", "day": "Sunday", "time": "3:00 AM"},
+        {"id": "e90", "name": "MICHELL", "day": "Sunday", "time": "3:00 AM"},
+        {"id": "e91", "name": "JULY", "day": "Sunday", "time": "3:00 AM"},
+
+        # 4:00 AM
+        {"id": "e92", "name": "STELLA", "day": "Monday", "time": "4:00 AM"},
+        {"id": "e93", "name": "STELLA", "day": "Tuesday", "time": "4:00 AM"},
+        {"id": "e94", "name": "STELLA", "day": "Wednesday", "time": "4:00 AM"},
+        {"id": "e95", "name": "STELLA", "day": "Thursday", "time": "4:00 AM"},
+        {"id": "e96", "name": "STELLA", "day": "Friday", "time": "4:00 AM"},
+        {"id": "e97", "name": "ELIZABETH", "day": "Saturday", "time": "4:00 AM"},
+        {"id": "e98", "name": "MARK", "day": "Sunday", "time": "4:00 AM"},
+
+        # 6:00 PM (18:00:00)
+        {"id": "e99", "name": "JOJO", "day": "Monday", "time": "6:00 PM"},
+        {"id": "e100", "name": "RENCE", "day": "Monday", "time": "6:00 PM"},
+        {"id": "e101", "name": "JOHN", "day": "Monday", "time": "6:00 PM"},
+        {"id": "e102", "name": "HENNA", "day": "Monday", "time": "6:00 PM"},
+        {"id": "e103", "name": "PETTER", "day": "Monday", "time": "6:00 PM"},
+        {"id": "e104", "name": "YARI", "day": "Monday", "time": "6:00 PM"},
+        {"id": "e105", "name": "JOJO", "day": "Tuesday", "time": "6:00 PM"},
+        {"id": "e106", "name": "RENCE", "day": "Tuesday", "time": "6:00 PM"},
+        {"id": "e107", "name": "AGA", "day": "Tuesday", "time": "6:00 PM"},
+        {"id": "e108", "name": "HENNA", "day": "Tuesday", "time": "6:00 PM"},
+        {"id": "e109", "name": "YARI", "day": "Tuesday", "time": "6:00 PM"},
+        {"id": "e110", "name": "ELLA", "day": "Tuesday", "time": "6:00 PM"},
+        {"id": "e111", "name": "JOJO", "day": "Wednesday", "time": "6:00 PM"},
+        {"id": "e112", "name": "RENCE", "day": "Wednesday", "time": "6:00 PM"},
+        {"id": "e113", "name": "HENNA", "day": "Wednesday", "time": "6:00 PM"},
+        {"id": "e114", "name": "ELLA", "day": "Wednesday", "time": "6:00 PM"},
+        {"id": "e115", "name": "YARI", "day": "Wednesday", "time": "6:00 PM"},
+        {"id": "e116", "name": "JOHN", "day": "Wednesday", "time": "6:00 PM"},
+        {"id": "e117", "name": "PETTER", "day": "Wednesday", "time": "6:00 PM"},
+        {"id": "e118", "name": "AGA", "day": "Wednesday", "time": "6:00 PM"},
+        {"id": "e119", "name": "JOHN", "day": "Thursday", "time": "6:00 PM"},
+        {"id": "e120", "name": "HENNA", "day": "Thursday", "time": "6:00 PM"},
+        {"id": "e121", "name": "PETTER", "day": "Thursday", "time": "6:00 PM"},
+        {"id": "e122", "name": "ELLA", "day": "Thursday", "time": "6:00 PM"},
+        {"id": "e123", "name": "YARI", "day": "Thursday", "time": "6:00 PM"},
+        {"id": "e124", "name": "AGA", "day": "Thursday", "time": "6:00 PM"},
+        {"id": "e125", "name": "AGA", "day": "Friday", "time": "6:00 PM"},
+        {"id": "e126", "name": "JOHN", "day": "Friday", "time": "6:00 PM"},
+        {"id": "e127", "name": "HENNA", "day": "Friday", "time": "6:00 PM"},
+        {"id": "e128", "name": "PETTER", "day": "Friday", "time": "6:00 PM"},
+        {"id": "e129", "name": "ELLA", "day": "Friday", "time": "6:00 PM"},
+        {"id": "e130", "name": "JOJO", "day": "Friday", "time": "6:00 PM"},
+        {"id": "e131", "name": "RENCE", "day": "Friday", "time": "6:00 PM"},
+        {"id": "e132", "name": "JOJO", "day": "Saturday", "time": "6:00 PM"},
+        {"id": "e133", "name": "RENCE", "day": "Saturday", "time": "6:00 PM"},
+        {"id": "e134", "name": "AGA", "day": "Saturday", "time": "6:00 PM"},
+        {"id": "e135", "name": "JOHN", "day": "Saturday", "time": "6:00 PM"},
+        {"id": "e136", "name": "PETTER", "day": "Saturday", "time": "6:00 PM"},
+        {"id": "e137", "name": "ELLA", "day": "Saturday", "time": "6:00 PM"},
+        {"id": "e138", "name": "YARI", "day": "Saturday", "time": "6:00 PM"},
+        {"id": "e139", "name": "JOJO", "day": "Sunday", "time": "6:00 PM"},
+        {"id": "e140", "name": "RENCE", "day": "Sunday", "time": "6:00 PM"},
+        {"id": "e141", "name": "JOHN", "day": "Sunday", "time": "6:00 PM"},
+        {"id": "e142", "name": "PETTER", "day": "Sunday", "time": "6:00 PM"},
+        {"id": "e143", "name": "ELLA", "day": "Sunday", "time": "6:00 PM"},
+        {"id": "e144", "name": "YARI", "day": "Sunday", "time": "6:00 PM"},
+        {"id": "e145", "name": "HENNA", "day": "Sunday", "time": "6:00 PM"},
+
+        # 7:00 PM (19:00:00)
+        {"id": "e146", "name": "JOJO", "day": "Monday", "time": "7:00 PM"},
+        {"id": "e147", "name": "RENCE", "day": "Monday", "time": "7:00 PM"},
+        {"id": "e148", "name": "JOHN", "day": "Monday", "time": "7:00 PM"},
+        {"id": "e149", "name": "HENNA", "day": "Monday", "time": "7:00 PM"},
+        {"id": "e150", "name": "YARI", "day": "Monday", "time": "7:00 PM"},
+        {"id": "e151", "name": "JOJO", "day": "Tuesday", "time": "7:00 PM"},
+        {"id": "e152", "name": "RENCE", "day": "Tuesday", "time": "7:00 PM"},
+        {"id": "e153", "name": "AGA", "day": "Tuesday", "time": "7:00 PM"},
+        {"id": "e154", "name": "HENNA", "day": "Tuesday", "time": "7:00 PM"},
+        {"id": "e155", "name": "YARI", "day": "Tuesday", "time": "7:00 PM"},
+        {"id": "e156", "name": "JOJO", "day": "Wednesday", "time": "7:00 PM"},
+        {"id": "e157", "name": "RENCE", "day": "Wednesday", "time": "7:00 PM"},
+        {"id": "e158", "name": "HENNA", "day": "Wednesday", "time": "7:00 PM"},
+        {"id": "e159", "name": "YARI", "day": "Wednesday", "time": "7:00 PM"},
+        {"id": "e160", "name": "JOHN", "day": "Wednesday", "time": "7:00 PM"},
+        {"id": "e161", "name": "AGA", "day": "Wednesday", "time": "7:00 PM"},
+        {"id": "e162", "name": "JOHN", "day": "Thursday", "time": "7:00 PM"},
+        {"id": "e163", "name": "HENNA", "day": "Thursday", "time": "7:00 PM"},
+        {"id": "e164", "name": "YARI", "day": "Thursday", "time": "7:00 PM"},
+        {"id": "e165", "name": "AGA", "day": "Thursday", "time": "7:00 PM"},
+        {"id": "e166", "name": "AGA", "day": "Friday", "time": "7:00 PM"},
+        {"id": "e167", "name": "JOHN", "day": "Friday", "time": "7:00 PM"},
+        {"id": "e168", "name": "HENNA", "day": "Friday", "time": "7:00 PM"},
+        {"id": "e169", "name": "JOJO", "day": "Friday", "time": "7:00 PM"},
+        {"id": "e170", "name": "RENCE", "day": "Friday", "time": "7:00 PM"},
+        {"id": "e171", "name": "JOJO", "day": "Saturday", "time": "7:00 PM"},
+        {"id": "e172", "name": "RENCE", "day": "Saturday", "time": "7:00 PM"},
+        {"id": "e173", "name": "AGA", "day": "Saturday", "time": "7:00 PM"},
+        {"id": "e174", "name": "JOHN", "day": "Saturday", "time": "7:00 PM"},
+        {"id": "e175", "name": "YARI", "day": "Saturday", "time": "7:00 PM"},
+        {"id": "e176", "name": "JOJO", "day": "Sunday", "time": "7:00 PM"},
+        {"id": "e177", "name": "RENCE", "day": "Sunday", "time": "7:00 PM"},
+        {"id": "e178", "name": "JOHN", "day": "Sunday", "time": "7:00 PM"},
+        {"id": "e179", "name": "YARI", "day": "Sunday", "time": "7:00 PM"},
+        {"id": "e180", "name": "HENNA", "day": "Sunday", "time": "7:00 PM"},
+
+        # 8:00 PM (20:00:00)
+        {"id": "e181", "name": "JOJO", "day": "Monday", "time": "8:00 PM"},
+        {"id": "e182", "name": "RENCE", "day": "Monday", "time": "8:00 PM"},
+        {"id": "e183", "name": "JOHN", "day": "Monday", "time": "8:00 PM"},
+        {"id": "e184", "name": "NOREEN", "day": "Monday", "time": "8:00 PM"},
+        {"id": "e185", "name": "JOJO", "day": "Tuesday", "time": "8:00 PM"},
+        {"id": "e186", "name": "RENCE", "day": "Tuesday", "time": "8:00 PM"},
+        {"id": "e187", "name": "AGA", "day": "Tuesday", "time": "8:00 PM"},
+        {"id": "e188", "name": "YARI", "day": "Tuesday", "time": "8:00 PM"},
+        {"id": "e189", "name": "JOJO", "day": "Wednesday", "time": "8:00 PM"},
+        {"id": "e190", "name": "RENCE", "day": "Wednesday", "time": "8:00 PM"},
+        {"id": "e191", "name": "YARI", "day": "Wednesday", "time": "8:00 PM"},
+        {"id": "e192", "name": "CHANNIE", "day": "Wednesday", "time": "8:00 PM"},
+        {"id": "e193", "name": "JOHN", "day": "Thursday", "time": "8:00 PM"},
+        {"id": "e194", "name": "NOREEN", "day": "Thursday", "time": "8:00 PM"},
+        {"id": "e195", "name": "YARI", "day": "Thursday", "time": "8:00 PM"},
+        {"id": "e196", "name": "CHANNIE", "day": "Thursday", "time": "8:00 PM"},
+        {"id": "e197", "name": "AGA", "day": "Friday", "time": "8:00 PM"},
+        {"id": "e198", "name": "JOHN", "day": "Friday", "time": "8:00 PM"},
+        {"id": "e199", "name": "NOREEN", "day": "Friday", "time": "8:00 PM"},
+        {"id": "e200", "name": "CHANNIE", "day": "Friday", "time": "8:00 PM"},
+        {"id": "e201", "name": "JOJO", "day": "Saturday", "time": "8:00 PM"},
+        {"id": "e202", "name": "RENCE", "day": "Saturday", "time": "8:00 PM"},
+        {"id": "e203", "name": "AGA", "day": "Saturday", "time": "8:00 PM"},
+        {"id": "e204", "name": "CHANNIE", "day": "Saturday", "time": "8:00 PM"},
+        {"id": "e205", "name": "JOJO", "day": "Sunday", "time": "8:00 PM"},
+        {"id": "e206", "name": "RENCE", "day": "Sunday", "time": "8:00 PM"},
+        {"id": "e207", "name": "JOHN", "day": "Sunday", "time": "8:00 PM"},
+        {"id": "e208", "name": "CHANNIE", "day": "Sunday", "time": "8:00 PM"}
+    ]
 
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 hours = ["12:00 AM"] + [f"{i}:00 AM" for i in range(1, 12)] + ["12:00 PM"] + [f"{i}:00 PM" for i in range(1, 12)]
@@ -90,7 +252,7 @@ with col4:
     st.write("") 
     if st.button("Add Agent Block", use_container_width=True):
         if new_name.strip():
-            new_id = f"s{len(st.session_state.shifts) + 1}"
+            new_id = f"e{len(st.session_state.shifts) + 1}"
             st.session_state.shifts.append({
                 "id": new_id,
                 "name": new_name,
